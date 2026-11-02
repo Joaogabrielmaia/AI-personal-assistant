@@ -152,7 +152,7 @@ async function lembretes(c: Ctx) {
   const a = agora(); const hoje = fmtData(a); const m = minutosDoDia(a);
   const lista = await all<any>(c.env.DB, "SELECT * FROM lembretes WHERE ativo = 1");
   for (const l of lista) {
-    const envios = await all<{ ts: string }>(c.env.DB, "SELECT ts FROM envios WHERE lembrete_id = ? AND ts LIKE ? ORDER BY ts", l.id, `${hoje}%`);
+    const envios = await all<{ ts: string }>(c.env.DB, "SELECT ts FROM envios WHERE lembrete_id = ? AND ts >= ? AND ts < ? ORDER BY ts", l.id, hoje, `${hoje}~`);
     let enviarAgora = false;
     if (l.tipo === "fixo") {
       const d = m - minutos(l.hora_fixa);

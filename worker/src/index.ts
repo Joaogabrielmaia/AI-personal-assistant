@@ -1,6 +1,7 @@
 /** Entrada do Worker: webhook do Telegram (fetch) e relógio de 1 minuto (scheduled). */
 import { acaoBotao } from "./botoes";
 import { run } from "./db";
+import { addDias, agora, fmtData, fmtIso } from "./time";
 import type { Env } from "./env";
 import { registrar, responder, transcrever } from "./llm";
 import { tick } from "./scheduler";
@@ -92,6 +93,14 @@ async function tratarUpdate(env: Env, update: any, exec: ExecutionContext) {
   else if (update.message) await tratarMensagem(c, update.message);
 }
 
+/** Uma vez por dia (03:10 de Brasília): apaga registros técnicos antigos, pra o banco e as consultas não crescerem sem parar. */
+async function limpezaDiaria(env: Env) {
+  const a = agora();
+  if (a.getUTCHours() !== 3 || a.getUTCMinutes() !== 10) return;
+  await run(env.DB, "DELETE FROM envios WHERE ts < ?", fmtData(addDias(a, -60)));
+  await run(env.DB, "DELETE FROM avisos_evento WHERE avisado = 1 AND quando < ?", fmtIso(addDias(a, -7)));
+}
+
 export default {
   async fetch(req: Request, env: Env, exec: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
@@ -117,6 +126,7 @@ export default {
 
   async scheduled(_evento: ScheduledController, env: Env, exec: ExecutionContext): Promise<void> {
     await tick(novoCtx(env, exec));
+    await limpezaDiaria(env);
     // limpa as marcas antigas de updates (guarda as últimas 200)
     await run(env.DB, "DELETE FROM jobs WHERE chave LIKE 'u:%' AND rowid NOT IN (SELECT rowid FROM jobs WHERE chave LIKE 'u:%' ORDER BY rowid DESC LIMIT 200)");
   },
