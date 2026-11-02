@@ -34,3 +34,4 @@ worker/.wrangler/
 worker/.dev.vars
 worker/.env*
 worker/.webhook-secret
+worker/backups/

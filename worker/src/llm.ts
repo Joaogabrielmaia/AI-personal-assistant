@@ -4,6 +4,8 @@ import { all, run } from "./db";
 import { executar, contexto, schemasPara, type Ctx } from "./tools";
 import { agora, fmtIso, nomeDiaSemana, tsCompleto } from "./time";
 import type { Botao } from "./telegram";
+import { contar } from "./contadores";
+import { modoEconomico } from "./metricas";
 
 const SYSTEM = `Você é o assistente pessoal de rotina de {nome}, via chat.
 Personalidade: direto, amigável, firme. Ele tende a se distrair e procrastinar, então cobre quando necessário, sem sermão.
@@ -39,6 +41,7 @@ ESTADO ATUAL:
 {contexto}`;
 
 const MAX_HISTORICO = 8;
+const MAX_HISTORICO_ECONOMICO = 4; // modo econômico: menos contexto = menos tokens por pergunta
 const nomeDono = (env: Env) => env.OWNER_NAME || "usuário";
 
 async function sistema(env: Env): Promise<string> {
@@ -49,8 +52,8 @@ async function sistema(env: Env): Promise<string> {
 }
 
 // ---------------- histórico ----------------
-async function carregarHistorico(env: Env): Promise<Msg[]> {
-  const rows = await all<{ role: string; content: string }>(env.DB, "SELECT role, content FROM historico ORDER BY id DESC LIMIT ?", MAX_HISTORICO);
+async function carregarHistorico(env: Env, limite: number): Promise<Msg[]> {
+  const rows = await all<{ role: string; content: string }>(env.DB, "SELECT role, content FROM historico ORDER BY id DESC LIMIT ?", limite);
   return rows.reverse().map((r) => ({ role: r.role, content: r.content }));
 }
 
@@ -127,7 +130,7 @@ async function chamarUm(p: Prov, modelo: string, msgs: Msg[], ferramentas: boole
       const r = await fetch(`${p.base.replace(/\/$/, "")}/chat/completions`, {
         method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${p.key}` }, body: JSON.stringify(corpo), signal: ctl.signal,
       });
-      if (r.ok) return await r.json();
+      if (r.ok) { contar("llm"); return await r.json(); }
       const txt = await r.text();
       const erro = new ErroApi(r.status, txt);
       if (r.status === 429) {
@@ -165,6 +168,8 @@ async function chamar(env: Env, msgs: Msg[], opc: { visao?: boolean; ferramentas
       return { resp, nome: p.nome };
     } catch (e) {
       ultimo = e;
+      contar("llm_falhas");
+      if (e instanceof ErroApi && e.status === 429) contar("llm_429");
       console.warn(`provedor ${p.nome} falhou: ${(e as Error).name}: ${(e as Error).message.slice(0, 500)}${eUltimo ? "" : " -> tentando o próximo"}`);
     }
   }
@@ -199,7 +204,7 @@ function paraBase64(buf: ArrayBuffer): string {
 /** Devolve a resposta e os botões. Pode lançar erro de API; quem chama avisa o usuário. */
 export async function responder(c: Ctx, texto: string, imagem?: ArrayBuffer): Promise<{ texto: string; botoes: Botao[] }> {
   const env = c.env;
-  const msgs: Msg[] = [{ role: "system", content: await sistema(env) }, ...(await carregarHistorico(env))];
+  const msgs: Msg[] = [{ role: "system", content: await sistema(env) }, ...(await carregarHistorico(env, (await modoEconomico(env)) ? MAX_HISTORICO_ECONOMICO : MAX_HISTORICO))];
   let paraHistorico = texto;
   if (imagem) {
     msgs.push({ role: "user", content: [
@@ -237,6 +242,10 @@ export async function responder(c: Ctx, texto: string, imagem?: ArrayBuffer): Pr
 /** Usado pelo agendador. Se a IA falhar, manda a mensagem simples (o lembrete nunca deixa de sair). */
 export async function gerarMensagemProativa(env: Env, instrucao: string): Promise<string> {
   let texto: string;
+  if (await modoEconomico(env)) { // modo econômico: o aviso sai com o texto simples, sem gastar IA
+    await registrar(env, "assistant", instrucao);
+    return instrucao;
+  }
   try {
     const { resp } = await chamar(env, [
       { role: "system", content: await sistema(env) },

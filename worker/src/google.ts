@@ -3,6 +3,8 @@
  * e guardado como segredo; aqui só renovamos o token de acesso quando precisa.
  */
 import type { Env } from "./env";
+import { contar } from "./contadores";
+import { economicoSabido } from "./metricas";
 import { addDias, agora, fmtIso, isoComFuso, parseLocal } from "./time";
 
 const SEM_LOGIN = { erro: "Google desligado: falta o login (GOOGLE_REFRESH_TOKEN)." };
@@ -33,16 +35,21 @@ async function tokenAcesso(env: Env): Promise<string | null> {
 }
 
 async function g(env: Env, url: string, init: RequestInit = {}): Promise<any> {
-  const t = await tokenAcesso(env);
-  if (!t) throw new Error(SEM_LOGIN.erro);
-  const r = await fetch(url, {
-    ...init,
-    headers: { authorization: `Bearer ${t}`, "content-type": "application/json", ...(init.headers ?? {}) },
-  });
-  if (r.status === 204) return {};
-  const j: any = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(`Google ${r.status}: ${j?.error?.message ?? "erro"}`);
-  return j;
+  try {
+    const t = await tokenAcesso(env);
+    if (!t) throw new Error(SEM_LOGIN.erro);
+    const r = await fetch(url, {
+      ...init,
+      headers: { authorization: `Bearer ${t}`, "content-type": "application/json", ...(init.headers ?? {}) },
+    });
+    if (r.status === 204) return {};
+    const j: any = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(`Google ${r.status}: ${j?.error?.message ?? "erro"}`);
+    return j;
+  } catch (e) {
+    contar("goog_falhas");
+    throw e;
+  }
 }
 
 // ---------------- Agenda ----------------
@@ -121,7 +128,7 @@ async function garantirAba(env: Env, aba: string, cabecalho: string[]): Promise<
 
 /** Acrescenta uma linha. Falhas aqui nunca derrubam o bot (o banco é a fonte principal). */
 export async function planilhaAppend(env: Env, aba: string, cabecalho: string[], linha: (string | number)[]): Promise<boolean> {
-  if (!planilhaAtiva(env)) return false;
+  if (!planilhaAtiva(env) || economicoSabido()) return false; // modo econômico: sem espelho na planilha
   try {
     await garantirAba(env, aba, cabecalho);
     await g(env, `${SHEETS}/${env.GOOGLE_SHEET_ID!.trim()}/values/${encodeURIComponent(aba)}!A1:append?valueInputOption=USER_ENTERED`, {

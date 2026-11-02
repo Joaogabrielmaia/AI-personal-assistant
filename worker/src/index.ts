@@ -1,14 +1,28 @@
 /** Entrada do Worker: webhook do Telegram (fetch) e relógio de 1 minuto (scheduled). */
 import { acaoBotao } from "./botoes";
+import { contar } from "./contadores";
 import { run } from "./db";
-import { addDias, agora, fmtData, fmtIso } from "./time";
 import type { Env } from "./env";
 import { registrar, responder, transcrever } from "./llm";
+import { checarLimites, flush, modoEconomico, textoUso } from "./metricas";
 import { tick } from "./scheduler";
 import { baixarArquivo, definirWebhook, digitando, dono, editar, enviar, responderBotao } from "./telegram";
+import { addDias, agora, fmtData, fmtIso } from "./time";
 import type { Ctx } from "./tools";
 
 const novoCtx = (env: Env, exec: ExecutionContext): Ctx => ({ env, bg: (p) => exec.waitUntil(p), botoes: [] });
+
+/** Limites de mídia: foto e áudio grandes gastam CPU (10 ms por execução no plano grátis) e tokens de IA. */
+const FOTO_MAX_LARGURA = 1280;
+const FOTO_MAX_BYTES = 500_000;
+const AUDIO_MAX_SEGUNDOS = 120;
+const AUDIO_MAX_BYTES = 2_000_000;
+
+/** Telegram manda a mesma foto em vários tamanhos. Pega o maior que ainda é leve (legível pra recibo, barato de processar). */
+function escolherFoto(fotos: any[]): any {
+  const porTamanho = [...fotos].sort((a, b) => (b.file_size ?? 0) - (a.file_size ?? 0));
+  return porTamanho.find((f) => (f.width ?? 0) <= FOTO_MAX_LARGURA && (f.file_size ?? 0) <= FOTO_MAX_BYTES) ?? porTamanho[porTamanho.length - 1];
+}
 
 /** Responde com a IA e manda o resultado (com botões, se a IA pediu). */
 async function responderIA(c: Ctx, chatId: string, texto: string, imagem?: ArrayBuffer) {
@@ -37,6 +51,24 @@ async function tratarMensagem(c: Ctx, msg: any) {
   }
   if (chatId !== dono(c.env)) return; // outras pessoas: ignora, sem resposta e sem gastar IA
 
+  // comando de uso: responde direto do banco, sem gastar nada de IA
+  if (/^\/(uso|status)\b/i.test(texto.trim())) {
+    await enviar(c.env, await textoUso(c.env), chatId);
+    return;
+  }
+
+  // mídia: nunca é guardada; só passa pela memória. Mesmo assim, é a parte mais pesada: limites e modo econômico
+  if (voz || foto) {
+    if (await modoEconomico(c.env)) {
+      await enviar(c.env, "🟡 Modo econômico ligado hoje (uso perto do limite grátis). Me mande por texto; foto e áudio voltam às 21:00.", chatId);
+      return;
+    }
+    if (voz && ((voz.duration ?? 0) > AUDIO_MAX_SEGUNDOS || (voz.file_size ?? 0) > AUDIO_MAX_BYTES)) {
+      await enviar(c.env, `🎤 Áudio longo demais (limite ${AUDIO_MAX_SEGUNDOS}s). Manda um mais curto ou escreve.`, chatId);
+      return;
+    }
+  }
+
   let imagem: ArrayBuffer | undefined;
   try {
     if (voz) {
@@ -45,7 +77,7 @@ async function tratarMensagem(c: Ctx, msg: any) {
       texto = await transcrever(c.env, a.dados, a.nome);
       await enviar(c.env, `🎤 Ouvi: ${texto}`, chatId);
     } else if (foto) {
-      imagem = (await baixarArquivo(c.env, foto[foto.length - 1].file_id)).dados; // maior resolução
+      imagem = (await baixarArquivo(c.env, escolherFoto(foto).file_id)).dados;
     }
   } catch (e) {
     console.error("erro ao baixar/transcrever mídia:", (e as Error).message);
@@ -93,16 +125,23 @@ async function tratarUpdate(env: Env, update: any, exec: ExecutionContext) {
   else if (update.message) await tratarMensagem(c, update.message);
 }
 
-/** Uma vez por dia (03:10 de Brasília): apaga registros técnicos antigos, pra o banco e as consultas não crescerem sem parar. */
+/** Uma vez por dia (03:10 de Brasília): apaga o que só serve por alguns dias, pra banco e consultas não crescerem sem parar. */
 async function limpezaDiaria(env: Env) {
   const a = agora();
   if (a.getUTCHours() !== 3 || a.getUTCMinutes() !== 10) return;
   await run(env.DB, "DELETE FROM envios WHERE ts < ?", fmtData(addDias(a, -60)));
   await run(env.DB, "DELETE FROM avisos_evento WHERE avisado = 1 AND quando < ?", fmtIso(addDias(a, -7)));
+  await run(env.DB, "DELETE FROM uso_dia WHERE dia < ?", fmtData(addDias(a, -60)));
+  // marcas de updates do Telegram (guarda as últimas 200) e de alertas/resumos de dias passados
+  await run(env.DB, "DELETE FROM jobs WHERE chave LIKE 'u:%' AND rowid NOT IN (SELECT rowid FROM jobs WHERE chave LIKE 'u:%' ORDER BY rowid DESC LIMIT 200)");
+  const velho = fmtData(addDias(a, -7));
+  for (const prefixo of ["alerta:", "manha:", "noite:", "semana:"])
+    await run(env.DB, "DELETE FROM jobs WHERE chave LIKE ? AND chave < ?", `${prefixo}%`, `${prefixo}${velho}`);
 }
 
 export default {
   async fetch(req: Request, env: Env, exec: ExecutionContext): Promise<Response> {
+    contar("req");
     const url = new URL(req.url);
 
     if (req.method === "POST" && url.pathname === "/telegram") {
@@ -111,6 +150,7 @@ export default {
       if (update) {
         try { await tratarUpdate(env, update, exec); } catch (e) { console.error("erro ao tratar update:", (e as Error).message); }
       }
+      exec.waitUntil(flush(env).catch(() => {})); // grava o uso desta requisição (1 escrita)
       return new Response("ok");
     }
 
@@ -125,9 +165,11 @@ export default {
   },
 
   async scheduled(_evento: ScheduledController, env: Env, exec: ExecutionContext): Promise<void> {
+    contar("req");
+    await modoEconomico(env); // aprende se o modo econômico está ligado (1 leitura por minuto)
     await tick(novoCtx(env, exec));
     await limpezaDiaria(env);
-    // limpa as marcas antigas de updates (guarda as últimas 200)
-    await run(env.DB, "DELETE FROM jobs WHERE chave LIKE 'u:%' AND rowid NOT IN (SELECT rowid FROM jobs WHERE chave LIKE 'u:%' ORDER BY rowid DESC LIMIT 200)");
+    await flush(env);          // grava o uso do minuto
+    await checarLimites(env);  // avisa se algum limite passou de 70/90/98%
   },
 } satisfies ExportedHandler<Env>;

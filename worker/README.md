@@ -34,6 +34,10 @@ O roteiro de teste fala com o Worker como se fosse o Telegram: texto, botões, f
 6. `npm run deploy` (mostra a URL do Worker).
 7. **Desligue o bot Python** (o Telegram não entrega por webhook e por polling ao mesmo tempo) e rode `npm run webhook -- https://SEU-WORKER.workers.dev`.
 
+## Contingência e limites
+
+O bot mede o próprio uso, avisa no Telegram antes de chegar nos limites do plano grátis e liga um modo econômico sozinho. Veja [CONTINGENCIA.md](CONTINGENCIA.md). Comando útil: `/uso`.
+
 ## Diferenças em relação à versão Python
 - O banco é o D1, não o arquivo SQLite local.
 - O relógio é da Cloudflare: pode atrasar alguns segundos, sem a precisão de um servidor.

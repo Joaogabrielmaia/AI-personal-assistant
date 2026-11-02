@@ -12,7 +12,8 @@
     "segredos": "node scripts/enviar-segredos.mjs",
     "webhook": "node scripts/ligar-webhook.mjs",
     "db:local": "wrangler d1 migrations apply assistente --local",
-    "db:remoto": "wrangler d1 migrations apply assistente --remote"
+    "db:remoto": "wrangler d1 migrations apply assistente --remote",
+    "backup": "wrangler d1 export assistente --remote --output backups/assistente.sql"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250101.0",

@@ -1,3 +1,4 @@
+import { contar } from "./contadores";
 import type { Env } from "./env";
 
 /** [texto do botão, callback_data (até 64 bytes)] */
@@ -44,8 +45,17 @@ async function chamar(env: Env, metodo: string, corpo: unknown, ms = 15000): Pro
 export async function enviar(env: Env, texto: string, chatId?: string, botoes?: Botao[]) {
   const payload: Record<string, unknown> = { chat_id: chatId || dono(env), text: formatar(texto), parse_mode: "HTML" };
   if (botoes?.length) payload.reply_markup = teclado(botoes);
-  const r = await chamar(env, "sendMessage", payload);
-  if (!r?.ok) throw new Error(`telegram sendMessage falhou: ${r?.description ?? "sem resposta"}`);
+  let r: any;
+  try {
+    r = await chamar(env, "sendMessage", payload);
+  } catch (e) {
+    contar("tg_falhas");
+    throw e;
+  }
+  if (!r?.ok) {
+    contar("tg_falhas");
+    throw new Error(`telegram sendMessage falhou: ${r?.description ?? "sem resposta"}`);
+  }
 }
 
 export const responderBotao = (env: Env, id: string, texto = "") =>

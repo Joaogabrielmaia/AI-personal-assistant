@@ -3,6 +3,7 @@ import { botoesTarefa } from "./botoes";
 import { all, first, kvGet, kvSet, run } from "./db";
 import * as G from "./google";
 import { gerarMensagemProativa, registrar } from "./llm";
+import { economicoSabido } from "./metricas";
 import * as ntfy from "./ntfy";
 import { enviar, type Botao } from "./telegram";
 import { agendarAvisoEvento, executar, type Ctx } from "./tools";
@@ -44,6 +45,7 @@ async function cobrarTarefas(c: Ctx) {
 
 /** Eventos da agenda: lê a Google Agenda (próximas 36h) e garante um aviso pra cada um, mesmo os criados fora do bot. */
 async function sincronizarAgenda(c: Ctx) {
+  if (economicoSabido()) return; // modo econômico: pausa a leitura da agenda (eventos já agendados continuam avisando)
   const ultimo = await kvGet(c.env.DB, "sync_agenda");
   const a = agora();
   if (ultimo && a.getTime() - Number(ultimo) < SYNC_AGENDA_MIN * 60000) return;
