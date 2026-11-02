@@ -1,7 +1,7 @@
 /** Entrada do Worker: webhook do Telegram (fetch) e relógio de 1 minuto (scheduled). */
 import { acaoBotao } from "./botoes";
 import { contar } from "./contadores";
-import { run } from "./db";
+import { kvGet, kvSet, run } from "./db";
 import type { Env } from "./env";
 import { registrar, responder, transcrever } from "./llm";
 import { checarLimites, flush, modoEconomico, textoUso } from "./metricas";
@@ -40,7 +40,8 @@ async function responderIA(c: Ctx, chatId: string, texto: string, imagem?: Array
 
 async function tratarMensagem(c: Ctx, msg: any) {
   const chatId = String(msg.chat?.id ?? "");
-  const voz = msg.voice ?? msg.audio;
+  // áudio pode chegar como voz, como áudio ou como arquivo (documento) de tipo audio/*
+  const voz = msg.voice ?? msg.audio ?? (String(msg.document?.mime_type ?? "").startsWith("audio/") ? msg.document : null);
   const foto = msg.photo;
   let texto: string = msg.text ?? msg.caption ?? "";
   if (!(texto || voz || foto) || msg.chat?.type !== "private") return;
@@ -117,12 +118,19 @@ async function tratarBotao(c: Ctx, cb: any) {
 }
 
 async function tratarUpdate(env: Env, update: any, exec: ExecutionContext) {
-  // o Telegram reenvia se demoramos: cada update_id é processado uma só vez
-  const marca = await run(env.DB, "INSERT OR IGNORE INTO jobs (chave) VALUES (?)", `u:${update.update_id}`);
-  if (!marca.changes) return;
+  // O Telegram reenvia se demoramos ou se a conexão cai. Marcação em DUAS fases:
+  //  - "ok": já foi tratado, ignora a reentrega;
+  //  - hora de início: outra execução ainda está nele (ignora por 90 s); passou disso sem terminar, trata de novo.
+  // (antes eu marcava só no início, e uma execução cancelada fazia a mensagem se perder em silêncio)
+  const chave = `u:${update.update_id}`;
+  const estado = await kvGet(env.DB, chave);
+  if (estado === "ok") return;
+  if (estado && Date.now() - Number(estado) < 90_000) return;
+  await kvSet(env.DB, chave, String(Date.now()));
   const c = novoCtx(env, exec);
   if (update.callback_query) await tratarBotao(c, update.callback_query);
   else if (update.message) await tratarMensagem(c, update.message);
+  await kvSet(env.DB, chave, "ok");
 }
 
 /** Uma vez por dia (03:10 de Brasília): apaga o que só serve por alguns dias, pra banco e consultas não crescerem sem parar. */
@@ -133,7 +141,7 @@ async function limpezaDiaria(env: Env) {
   await run(env.DB, "DELETE FROM avisos_evento WHERE avisado = 1 AND quando < ?", fmtIso(addDias(a, -7)));
   await run(env.DB, "DELETE FROM uso_dia WHERE dia < ?", fmtData(addDias(a, -60)));
   // marcas de updates do Telegram (guarda as últimas 200) e de alertas/resumos de dias passados
-  await run(env.DB, "DELETE FROM jobs WHERE chave LIKE 'u:%' AND rowid NOT IN (SELECT rowid FROM jobs WHERE chave LIKE 'u:%' ORDER BY rowid DESC LIMIT 200)");
+  await run(env.DB, "DELETE FROM kv WHERE chave LIKE 'u:%' AND rowid NOT IN (SELECT rowid FROM kv WHERE chave LIKE 'u:%' ORDER BY rowid DESC LIMIT 200)");
   const velho = fmtData(addDias(a, -7));
   for (const prefixo of ["alerta:", "manha:", "noite:", "semana:"])
     await run(env.DB, "DELETE FROM jobs WHERE chave LIKE ? AND chave < ?", `${prefixo}%`, `${prefixo}${velho}`);

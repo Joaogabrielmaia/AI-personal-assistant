@@ -5,6 +5,8 @@ import { executar, contexto, schemasPara, type Ctx } from "./tools";
 import { agora, fmtIso, nomeDiaSemana, tsCompleto } from "./time";
 import type { Botao } from "./telegram";
 import { contar } from "./contadores";
+import { kvGet, kvSet } from "./db";
+import { diaUtc } from "./metricas";
 import { modoEconomico } from "./metricas";
 
 const SYSTEM = `Você é o assistente pessoal de rotina de {nome}, via chat.
@@ -161,6 +163,8 @@ async function chamar(env: Env, msgs: Msg[], opc: { visao?: boolean; ferramentas
   for (let i = 0; i < lista.length; i++) {
     const p = lista[i];
     const eUltimo = i === lista.length - 1;
+    // limite DIÁRIO esgotado (ex: Groq grátis = 200 mil tokens/dia): não gasta chamada nem espera à toa até o dia virar
+    if (!eUltimo && (await kvGet(env.DB, `llm_off:${p.nome}`)) === diaUtc()) continue;
     const origem = opc.origem ?? new Set<string>();
     const enviar = [...origem].every((o) => o === p.nome) ? msgs : achatar(msgs, nomeDono(env));
     try {
@@ -169,7 +173,10 @@ async function chamar(env: Env, msgs: Msg[], opc: { visao?: boolean; ferramentas
     } catch (e) {
       ultimo = e;
       contar("llm_falhas");
-      if (e instanceof ErroApi && e.status === 429) contar("llm_429");
+      if (e instanceof ErroApi && e.status === 429) {
+        contar("llm_429");
+        if (e.corpo.toLowerCase().includes("per day")) await kvSet(env.DB, `llm_off:${p.nome}`, diaUtc()); // só volta no dia seguinte (UTC)
+      }
       console.warn(`provedor ${p.nome} falhou: ${(e as Error).name}: ${(e as Error).message.slice(0, 500)}${eUltimo ? "" : " -> tentando o próximo"}`);
     }
   }

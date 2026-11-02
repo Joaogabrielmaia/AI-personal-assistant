@@ -107,7 +107,7 @@ export async function checarLimites(env: Env) {
   // falhas de serviços externos: aviso 1x por dia cada
   const falhas: [boolean, string, string][] = [
     [u.llm_429 >= 5, "llm429",
-      `⚠️ A IA recusou ${u.llm_429} chamadas hoje por limite de uso (erro 429). Causa provável: o plano grátis do provedor (Groq/Gemini) bateu o limite por minuto ou por dia. Se houver reserva configurada, ela assume; senão, algumas respostas falham. Pode melhorar sozinho em alguns minutos.`],
+      `⚠️ A IA recusou ${u.llm_429} chamadas hoje por limite de uso (erro 429). Causa provável: o plano grátis do provedor (Groq/Gemini) bateu o limite por minuto ou por DIA (o Groq grátis permite cerca de 200 mil tokens por dia, o que são algumas dezenas de conversas). Se o limite for diário, o bot passa a usar só o reserva até as 21:00. Se não houver reserva, algumas respostas falham.`],
     [u.llm_falhas >= 10, "llm",
       `⚠️ A IA falhou ${u.llm_falhas} vezes hoje. Causas prováveis: provedor fora do ar ou chave inválida/expirada. Confira as chaves (LLM_API_KEY e LLM2_API_KEY); lembretes e alarmes continuam funcionando porque não dependem da IA.`],
     [u.goog_falhas >= 5, "google",
