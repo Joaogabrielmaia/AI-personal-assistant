@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidade | AI Personal Assistant</title>
+<meta name="description" content="Política de privacidade do AI Personal Assistant, projeto pessoal de código aberto.">
+<style>
+  :root { --bg:#ffffff; --fg:#1d2330; --muted:#5b6475; --accent:#2457d6; --card:#f4f6fb; --line:#dfe4ee; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#12151c; --fg:#e8ebf2; --muted:#9aa3b5; --accent:#7ea2ff; --card:#1a1f2a; --line:#2a3140; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 1.8rem; line-height:1.2; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 30px 0 6px; }
+  .muted { color: var(--muted); }
+  a { color: var(--accent); }
+  table { width:100%; border-collapse:collapse; margin:10px 0; font-size:.95rem; }
+  th, td { text-align:left; border:1px solid var(--line); padding:8px 10px; vertical-align:top; }
+  th { background:var(--card); }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 16px; }
+  code { background:var(--card); padding:1px 5px; border-radius:5px; }
+  hr { border:0; border-top:1px solid var(--line); margin:40px 0 24px; }
+  @media (max-width: 560px) { th, td { padding:6px; font-size:.9rem; } }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">&larr; AI Personal Assistant</a></p>
+  <h1>Política de Privacidade</h1>
+  <p class="muted">Última atualização: 02/11/2026</p>
+
+  <div class="box">
+    <strong>Resumo.</strong> O AI Personal Assistant é um projeto pessoal e de código aberto. Ele só usa os dados da sua conta Google
+    para executar o que <em>você</em> pede no Telegram (consultar ou criar eventos na sua agenda e registrar linhas numa planilha).
+    Os dados ficam no servidor de quem executa o app. Nada é vendido, usado para publicidade ou compartilhado com terceiros além
+    dos serviços descritos abaixo.
+  </div>
+
+  <h2>1. Quem somos</h2>
+  <p>O app é mantido por <strong>Joaogabrielmaia</strong> como projeto de portfólio, publicado em
+  <a href="https://github.com/Joaogabrielmaia/AI-personal-assistant">github.com/Joaogabrielmaia/AI-personal-assistant</a>.
+  Não é um serviço público: cada pessoa executa a própria cópia, com as próprias credenciais, e é a única controladora dos próprios dados.</p>
+
+  <h2>2. Dados do Google que o app acessa</h2>
+  <table>
+    <tr><th>Permissão (escopo)</th><th>Para quê</th></tr>
+    <tr><td><code>auth/calendar</code><br>Google Agenda</td><td>Listar os próximos eventos, criar e apagar eventos que você pedir, e avisar você no horário de cada evento.</td></tr>
+    <tr><td><code>auth/spreadsheets</code><br>Google Planilhas</td><td>Gravar e apagar linhas (gastos e atividades) na planilha usada pelo assistente.</td></tr>
+    <tr><td><code>auth/drive.file</code><br>Arquivos criados pelo app</td><td>Criar a planilha do assistente na sua conta. Dá acesso <strong>somente</strong> aos arquivos que o próprio app criou, não ao resto do seu Drive.</td></tr>
+  </table>
+  <p>O app não lê seus e-mails, contatos, fotos nem outros arquivos do Drive.</p>
+
+  <h2>3. Como usamos esses dados</h2>
+  <p>Exclusivamente para entregar as funções que você solicita ao assistente. Os dados do Google <strong>não</strong> são usados para publicidade,
+  para criar perfis, nem para treinar modelos de inteligência artificial próprios ou de terceiros por iniciativa do app.</p>
+
+  <h2>4. Com quem os dados passam (serviços usados)</h2>
+  <p>Para funcionar, o conteúdo das suas mensagens e, quando necessário para responder (por exemplo, "o que tenho na agenda?"), os dados que você pediu para consultar são enviados a:</p>
+  <table>
+    <tr><th>Serviço</th><th>Finalidade</th></tr>
+    <tr><td>Provedores de IA (por padrão Groq e Google Gemini API)</td><td>Entender o pedido e redigir a resposta. Cada provedor tem sua própria política; em planos gratuitos alguns provedores podem usar o conteúdo para melhorar seus produtos. Para evitar isso, use um plano pago.</td></tr>
+    <tr><td>Telegram</td><td>Receber suas mensagens e entregar as respostas e os lembretes.</td></tr>
+    <tr><td>ntfy (opcional)</td><td>Entregar o texto do alarme de acordar no celular.</td></tr>
+    <tr><td>Google (Agenda e Planilhas)</td><td>Executar as ações pedidas na sua conta.</td></tr>
+  </table>
+  <p>Fora esses serviços, não vendemos, alugamos nem compartilhamos dados com ninguém.</p>
+
+  <h2>5. Onde ficam os dados e por quanto tempo</h2>
+  <p>Tarefas, gastos, metas, histórico de conversa e as credenciais de acesso ficam num banco de dados local (SQLite) e em arquivos
+  no servidor ou computador de quem executa o app. Não existe um banco central. Os dados ficam até você apagá-los: basta pedir ao assistente,
+  excluir o arquivo do banco ou apagar as linhas da planilha.</p>
+
+  <h2>6. Seus controles</h2>
+  <ul>
+    <li><strong>Revogar o acesso ao Google</strong> a qualquer momento em <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>. Em seguida, apague o arquivo de token do app.</li>
+    <li><strong>Apagar seus dados:</strong> apague o banco local e a planilha criada pelo assistente.</li>
+    <li>O bot responde somente ao ID do Telegram do dono da instância; mensagens de outras pessoas são ignoradas.</li>
+  </ul>
+
+  <h2>7. Segurança</h2>
+  <p>As chaves e tokens ficam em arquivos locais fora do repositório de código e não são publicados. Recomenda-se proteger o servidor e manter essas credenciais privadas.</p>
+
+  <h2>8. Crianças</h2>
+  <p>O app não é direcionado a menores de 13 anos.</p>
+
+  <h2>9. Mudanças nesta política</h2>
+  <p>Podemos atualizar esta página; a data no topo indica a última revisão.</p>
+
+  <h2>10. Contato</h2>
+  <p>Dúvidas ou pedidos sobre privacidade: abra uma <a href="https://github.com/Joaogabrielmaia/AI-personal-assistant/issues">issue no GitHub</a>.</p>
+
+  <hr>
+
+  <h2 lang="en">Privacy Policy (English summary)</h2>
+  <div lang="en">
+    <p><strong>AI Personal Assistant</strong> is a personal, open-source project. It is not a public service: each person runs their own instance with their own credentials.</p>
+    <p><strong>Google data accessed.</strong> Google Calendar (<code>auth/calendar</code>) to list, create and delete events you ask for and to notify you at event time; Google Sheets (<code>auth/spreadsheets</code>) to add and remove rows in the assistant's spreadsheet; and <code>auth/drive.file</code> only to create that spreadsheet (access limited to files the app itself created).</p>
+    <p><strong>Use.</strong> Only to provide the features you request via Telegram. Google user data is not used for advertising, profiling, or to train AI models, and is not sold.</p>
+    <p><strong>Third-party processing.</strong> To answer you, message content and any data you ask the assistant to read (e.g. "what's on my calendar?") are sent to AI model providers (by default Groq and the Google Gemini API), to Telegram for delivery and, optionally, to ntfy for alarm notifications. Free tiers of some AI providers may use content to improve their products; use a paid tier to avoid this.</p>
+    <p><strong>Storage and deletion.</strong> Data is stored locally (SQLite and local files) on the server or computer of whoever runs the app; there is no central database. You can revoke access at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> and delete the local database and spreadsheet at any time.</p>
+    <p><strong>Limited Use.</strong> The app's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+    <p><strong>Contact.</strong> Open an <a href="https://github.com/Joaogabrielmaia/AI-personal-assistant/issues">issue on GitHub</a>.</p>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Personal Assistant</title>
+<meta name="description" content="Assistente pessoal de rotina que conversa por Telegram: tarefas, lembretes, gastos, agenda e planilha.">
+<style>
+  :root { --bg:#ffffff; --fg:#1d2330; --muted:#5b6475; --accent:#2457d6; --card:#f4f6fb; --line:#dfe4ee; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#12151c; --fg:#e8ebf2; --muted:#9aa3b5; --accent:#7ea2ff; --card:#1a1f2a; --line:#2a3140; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
+  h1 { font-size: 2rem; line-height:1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.2rem; margin: 32px 0 8px; }
+  p, li { color: var(--fg); }
+  .lead { color: var(--muted); font-size: 1.1rem; margin: 0 0 24px; }
+  a { color: var(--accent); }
+  .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); padding:0; list-style:none; }
+  .grid li { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .grid strong { display:block; margin-bottom:2px; }
+  .links { display:flex; gap:12px; flex-wrap:wrap; margin-top: 24px; }
+  .btn { display:inline-block; padding:10px 16px; border-radius:10px; border:1px solid var(--accent); text-decoration:none; font-weight:600; }
+  .btn.primary { background:var(--accent); color:var(--bg); }
+  footer { margin-top:40px; color:var(--muted); font-size:.9rem; border-top:1px solid var(--line); padding-top:16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>AI Personal Assistant</h1>
+  <p class="lead">Um assistente de rotina que mora no Telegram: você conversa por texto, áudio ou foto, e ele cuida de tarefas, lembretes, gastos, agenda e planilha.</p>
+
+  <h2>O que ele faz</h2>
+  <ul class="grid">
+    <li><strong>Tarefas e lembretes</strong>Avisa na hora, com botões (fiz / não fiz / reagendar) e cobra quando você enrola.</li>
+    <li><strong>Gastos</strong>Registra por texto ou foto de recibo e espelha numa planilha do Google.</li>
+    <li><strong>Agenda</strong>Cria e consulta eventos no Google Agenda e avisa no horário.</li>
+    <li><strong>Hábitos e análise</strong>Metas semanais, sequência de dias e padrões (dias, motivos de falta, gastos).</li>
+    <li><strong>Alarme</strong>Insiste até você acordar, também por notificação no celular.</li>
+    <li><strong>Resiliente</strong>Usa dois provedores de IA e troca sozinho se um falhar.</li>
+  </ul>
+
+  <h2>Sobre este app e o Google</h2>
+  <p>Este é um <strong>projeto pessoal de código aberto</strong>, usado pelo próprio desenvolvedor e disponível como portfólio. Ele não é um serviço público: cada pessoa que quiser usá-lo roda a própria cópia, com as próprias credenciais.
+  Quando conectado à sua conta Google, acessa apenas o seu Google Agenda e uma planilha criada por ele mesmo, para executar o que você pede no Telegram.</p>
+
+  <div class="links">
+    <a class="btn primary" href="privacy.html">Política de Privacidade</a>
+    <a class="btn" href="https://github.com/Joaogabrielmaia/AI-personal-assistant">Código no GitHub</a>
+  </div>
+
+  <footer>
+    <p>Personal open-source project (MIT License). It is not a public service: each user runs their own instance with their own credentials.</p>
+  </footer>
+</main>
+</body>
+</html>

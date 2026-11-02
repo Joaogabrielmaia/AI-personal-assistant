@@ -1,0 +1,13 @@
+# Bot do Telegram. Sobe com:  docker compose up -d --build
+# Antes: crie o .env (veja .env.example). Se usar Google, faça o login uma vez no seu PC
+# (python -m app.google_login) e deixe credenciais_oauth.json e token_google.json aqui.
+# ATENÇÃO: só UMA cópia do bot pode rodar por vez (o Telegram recusa duas).
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/data                                   # banco SQLite (suas tarefas, gastos...)
+      - ./token_google.json:/app/token_google.json         # precisa existir antes de subir
+      - ./credenciais_oauth.json:/app/credenciais_oauth.json:ro

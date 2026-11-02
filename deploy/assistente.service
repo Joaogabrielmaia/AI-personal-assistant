@@ -1,0 +1,20 @@
+# Serviço systemd: o bot sobe sozinho com a máquina e reinicia se cair.
+# Instalação (resumo):
+#   sudo cp deploy/assistente.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now assistente
+#   journalctl -u assistente -f     # ver o log
+[Unit]
+Description=Assistente de rotina (bot do Telegram)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=assistente
+WorkingDirectory=/opt/assistente
+ExecStart=/opt/assistente/.venv/bin/python -m app.bot
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1 PYTHONIOENCODING=utf-8
+
+[Install]
+WantedBy=multi-user.target

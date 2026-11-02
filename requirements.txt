@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+httpx
+openai
+apscheduler
+python-dotenv
+tzdata
+gspread
+google-auth-oauthlib
+google-api-python-client

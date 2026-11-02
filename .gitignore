@@ -1,0 +1,29 @@
+# --- SEGREDOS e dados pessoais: nunca vão pro GitHub ---
+.env
+.env.*
+!.env.example
+credenciais_oauth.json
+credenciais.json
+token_google.json
+client_secret*.json
+*.pem
+*.key
+
+# banco de dados e backups (suas tarefas, gastos, conversas)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
