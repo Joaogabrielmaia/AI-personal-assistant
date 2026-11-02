@@ -22,6 +22,11 @@ export interface Env {
   LLM2_MODEL?: string;
   LLM2_VISION_MODEL?: string;
   LLM2_NULLABLE?: string;
+  LLM3_API_KEY?: string;
+  LLM3_BASE_URL?: string;
+  LLM3_MODEL?: string;
+  LLM3_VISION_MODEL?: string;
+  LLM3_NULLABLE?: string;
 
   // Áudio (whisper)
   STT_API_KEY?: string;

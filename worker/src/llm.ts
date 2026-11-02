@@ -82,17 +82,18 @@ type Msg = { role: string; content?: any; tool_calls?: any[]; tool_call_id?: str
 interface Prov { nome: string; base: string; key: string; modelo: string; visao: string; nullable: boolean; timeoutMs: number }
 
 function provedores(env: Env): Prov[] {
+  const e = env as unknown as Record<string, string | undefined>;
   const lista: Prov[] = [];
-  if (env.LLM_API_KEY) {
-    lista.push({ nome: "LLM", base: env.LLM_BASE_URL, key: env.LLM_API_KEY, modelo: env.LLM_MODEL, visao: env.LLM_VISION_MODEL || env.LLM_MODEL,
-      nullable: (env.LLM_NULLABLE ?? "1") === "1", timeoutMs: 30000 });
+  // LLM = principal; LLM2, LLM3 = reservas, nessa ordem. Cada um com sua chave, endereço e modelo.
+  for (const p of ["LLM", "LLM2", "LLM3"]) {
+    const key = e[`${p}_API_KEY`], base = e[`${p}_BASE_URL`], modelo = e[`${p}_MODEL`];
+    if (!key || !base || !modelo) continue;
+    lista.push({ nome: p, base, key, modelo, visao: e[`${p}_VISION_MODEL`] || modelo,
+      // Groq precisa de "null" nos parâmetros opcionais; Gemini e a maioria dos outros não aceitam
+      nullable: (e[`${p}_NULLABLE`] ?? (p === "LLM" ? "1" : "0")) === "1", timeoutMs: 30000 });
   }
-  if (env.LLM2_API_KEY && env.LLM2_BASE_URL && env.LLM2_MODEL) {
-    lista.push({ nome: "LLM2", base: env.LLM2_BASE_URL, key: env.LLM2_API_KEY, modelo: env.LLM2_MODEL, visao: env.LLM2_VISION_MODEL || env.LLM2_MODEL,
-      nullable: (env.LLM2_NULLABLE ?? "0") === "1", timeoutMs: 30000 });
-  }
-  // com reserva, o principal tem pouco tempo: lento demais = passa pro reserva
-  if (lista.length > 1) lista[0].timeoutMs = Number(env.LLM_TIMEOUT_PRINCIPAL || 12) * 1000;
+  // quem não é o último tem pouco tempo: lento demais = passa pro próximo (o principal, 12 s; os do meio, 20 s)
+  lista.forEach((p, i) => { if (i < lista.length - 1) p.timeoutMs = (i === 0 ? Number(env.LLM_TIMEOUT_PRINCIPAL || 12) : 20) * 1000; });
   return lista;
 }
 
