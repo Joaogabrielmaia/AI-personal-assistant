@@ -3,13 +3,14 @@
   "name": "ai-personal-assistant",
   "main": "src/index.ts",
   "compatibility_date": "2025-11-01",
+  "workers_dev": true,
+  "preview_urls": false,
   "triggers": { "crons": ["* * * * *"] },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "assistente",
-      // preencha depois de: npx wrangler d1 create assistente
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "1c5a5aca-a9aa-4907-b064-134ba3c43491",
       "migrations_dir": "migrations"
     }
   ],
