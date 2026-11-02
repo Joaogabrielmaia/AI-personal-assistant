@@ -27,3 +27,10 @@ venv/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Worker (Cloudflare)
+worker/node_modules/
+worker/.wrangler/
+worker/.dev.vars
+worker/.env*
+worker/.webhook-secret

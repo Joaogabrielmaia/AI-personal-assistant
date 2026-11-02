@@ -42,6 +42,11 @@ Telegram ──► bot.py (long polling) ──► llm.py ──► provedor de 
 
 Python 3.11+ · SQLite · APScheduler · httpx · SDK `openai` (qualquer provedor compatível) · `gspread` e Google API Client · Telegram Bot API · ntfy · Docker / systemd.
 
+## Duas versões
+
+- **Python** (`app/`): bot que roda continuamente num servidor (VPS, Docker, PC).
+- **Cloudflare Workers** (`worker/`): mesma ideia em TypeScript, **sem servidor ligado** (webhook + relógio de 1 minuto + banco D1), no plano grátis. Veja [worker/README.md](worker/README.md).
+
 ## Rodar localmente
 
 ```bash

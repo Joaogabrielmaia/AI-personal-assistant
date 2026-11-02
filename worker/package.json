@@ -1,0 +1,24 @@
+{
+  "name": "ai-personal-assistant-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Versão serverless (Cloudflare Workers + D1) do AI Personal Assistant",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --test-scheduled",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx test/run.ts",
+    "segredos": "node scripts/enviar-segredos.mjs",
+    "webhook": "node scripts/ligar-webhook.mjs",
+    "db:local": "wrangler d1 migrations apply assistente --local",
+    "db:remoto": "wrangler d1 migrations apply assistente --remote"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "wrangler": "^4.0.0"
+  }
+}
